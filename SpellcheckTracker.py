@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 from discord import app_commands, Intents, Client, File, Message, Interaction, TextChannel, utils
 from discord.ext import tasks
 
-load_dotenv()
-
 
 def get_time():
     ct = str(datetime.datetime.now())
@@ -159,7 +157,7 @@ def main():
             '''Sorts players and returns a list of strings to send as Discord messages'''
             if not self.players:
                 print('No players to score')
-                return
+                return None
 
             print(f'{get_log_time()}> Tallying score')
             winners = [] # list of winners - the one/those with the lowest score
@@ -171,6 +169,9 @@ def main():
             for player in self.players:
                 if player.registered and player.completedToday:
                     spellcheck_players.append(player)
+            if not spellcheck_players:
+                print(f'{get_log_time()}> No players completed spellcheck, not scoring')
+                return None
             spellcheck_players.sort(key=get_score)
             first_winner = spellcheck_players[0]
             winners.append(first_winner)
@@ -280,18 +281,20 @@ def main():
                 print(f'{get_log_time()}> Waiting for {player.name}')
                 return
         scoreboard = ''
-        for line in client.tally_scores():
-            scoreboard += line
-        await message.channel.send(scoreboard)
-        for player in client.players:
-            if player.registered and player.filePath != '':
-                await message.channel.send(content=f'__{player.name}:__\n{player.messageContent}', file=File(player.filePath))
-                try:
-                    os.remove(player.filePath)
-                except OSError as e:
-                    print(f'{get_log_time()}> Error deleting {player.filePath}: {e}')
-                player.filePath = ''
-                player.messageContent = ''
+        lines = client.tally_scores()
+        if lines:
+            for line in lines:
+                scoreboard += line
+            await message.channel.send(scoreboard)
+            for player in client.players:
+                if player.registered and player.filePath != '':
+                    await message.channel.send(content=f'__{player.name}:__\n{player.messageContent}', file=File(player.filePath))
+                    try:
+                        os.remove(player.filePath)
+                    except OSError as e:
+                        print(f'{get_log_time()}> Error deleting {player.filePath}: {e}')
+                    player.filePath = ''
+                    player.messageContent = ''
 
 
     @client.tree.command(name='register', description='Register for Spellcheck tracking.')
@@ -386,18 +389,20 @@ def main():
             if shamed != '':
                 await client.text_channel.send(f'SHAME ON {shamed} FOR NOT DOING Spellcheck #{client.game_number}!')
             scoreboard = ''
-            for line in client.tally_scores():
-                scoreboard += line
-            await client.text_channel.send(scoreboard)
-            for player in client.players:
-                if player.registered and player.filePath != '':
-                    await client.text_channel.send(content=f'__{player.name}:__\n{player.messageContent}', file=File(player.filePath))
-                    try:
-                        os.remove(player.filePath)
-                    except OSError as e:
-                        print(f'Error deleting {player.filePath}: {e}')
-                    player.filePath = ''
-                    player.messageContent = ''
+            lines = client.tally_scores()
+            if lines:
+                for line in lines:
+                    scoreboard += line
+                await client.text_channel.send(scoreboard)
+                for player in client.players:
+                    if player.registered and player.filePath != '':
+                        await client.text_channel.send(content=f'__{player.name}:__\n{player.messageContent}', file=File(player.filePath))
+                        try:
+                            os.remove(player.filePath)
+                        except OSError as e:
+                            print(f'Error deleting {player.filePath}: {e}')
+                        player.filePath = ''
+                        player.messageContent = ''
 
         client.scored_today = False
         everyone = ''
@@ -418,4 +423,5 @@ def main():
 
 
 if __name__ == '__main__':
+    load_dotenv()
     main()
