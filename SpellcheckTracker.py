@@ -145,7 +145,7 @@ def main():
                 client.write_json_file()
                 print(f'{get_log_time()}> Player {player.name} - score: {player.score}')
                 response = f'{message.author.name} scored {player.score} points.\n'
-                if player.filePath == '':
+                if player.filePath == '' and not message.attachments:
                     response += 'Please send a screenshot of your spellings as a spoiler attachment, **NOT** a link.'
                 await message.channel.send(response)
             except:
@@ -226,7 +226,7 @@ def main():
     async def on_message(message: Message):
         '''Client on_message event'''
         # message is from this bot or not in dedicated text channel
-        if message.author == client.user or client.scored_today:
+        if message.channel.id != client.text_channel.id or message.author == client.user or client.scored_today:
             return
 
         if 'Spellcheck #' in message.content and ('🟥' in message.content or '🟩' in message.content):
@@ -252,13 +252,12 @@ def main():
                 await message.channel.send(f'{player.name}, you have already submitted your results today.')
                 return
 
-            # set channel
-            client.text_channel = message.channel
             client.write_json_file()
 
             # process player's results
             await client.process(message, player)
-        if message.channel.id == client.text_channel.id and message.attachments and message.attachments[0].is_spoiler():
+
+        if message.attachments and message.attachments[0].is_spoiler():
             for player in client.players:
                 if message.author.name == player.name:
                     if player.filePath == '':
