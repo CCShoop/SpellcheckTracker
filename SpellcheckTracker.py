@@ -129,7 +129,7 @@ def main():
                 parseGameNum = parseAll[0].split('#')
                 parseGameNum = parseGameNum[1]
                 if int(parseGameNum) != self.game_number:
-                    message.channel.send(f'You sent results for Spellcheck #{parseGameNum}; I\'m currently only accepting results for Spellcheck #{self.game_number}.')
+                    await message.channel.send(f'You sent results for Spellcheck #{parseGameNum}; I\'m currently only accepting results for Spellcheck #{self.game_number}.')
                     return
 
                 player.score = 0
